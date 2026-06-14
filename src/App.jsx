@@ -9,7 +9,6 @@ import {
   SlidersHorizontal,
   RotateCcw,
   RefreshCw,
-  KeyRound,
   Home,
   Compass,
 } from "lucide-react";
@@ -92,9 +91,6 @@ export default function App() {
   const [activePage, setActivePage] = useState("home");
   const [testStep, setTestStep] = useState(0);
   const [testAnswers, setTestAnswers] = useState({});
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("twelve-data-api-key") || "");
-  const [apiInput, setApiInput] = useState(() => localStorage.getItem("twelve-data-api-key") || "");
-  const [claudeApiKey, setClaudeApiKey] = useState(() => localStorage.getItem("claude-api-key") || "");
   const [markets, setMarkets] = useState(() => {
     try {
       const cached = JSON.parse(localStorage.getItem("hugo-market-cache"));
@@ -140,16 +136,13 @@ export default function App() {
   }, [layout]);
 
   useEffect(() => {
-    if (!apiKey) return;
     loadMarketData(false);
     const interval = window.setInterval(() => loadMarketData(false), QUOTE_REFRESH_MS);
     return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiKey, selected, timeframe]);
+  }, [selected, timeframe]);
 
   async function loadMarketData(force = false) {
-    if (!apiKey) return;
-
     const now = Date.now();
     const cacheKey = `${selected}-${timeframe}`;
     const cachedCandles = chartCache[cacheKey];
@@ -186,7 +179,6 @@ export default function App() {
 
     try {
       const { quoteResponse, selectedCandles } = await fetchTwelveDataMarketSnapshot({
-        apiKey,
         marketConfig,
         selected,
         currentInterval,
@@ -224,24 +216,6 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function saveApiKey() {
-    const clean = apiInput.trim();
-    localStorage.setItem("twelve-data-api-key", clean);
-    setApiKey(clean);
-  }
-
-  function saveCludeApiKey(key) {
-    localStorage.setItem("claude-api-key", key);
-    setClaudeApiKey(key);
-  }
-
-  function clearApiKey() {
-    localStorage.removeItem("twelve-data-api-key");
-    setApiKey("");
-    setApiInput("");
-    setMarkets(defaultMarketData);
   }
 
   function updateLayout(symbol, update) {
@@ -295,18 +269,6 @@ export default function App() {
         </nav>
       </aside>
 
-      {!apiKey && (
-        <div className="api-overlay">
-          <div className="api-card">
-            <KeyRound size={28} />
-            <h2>Connect real market data</h2>
-            <p>Paste your Twelve Data API key. It stays in your browser for local testing.</p>
-            <input value={apiInput} onChange={(e) => setApiInput(e.target.value)} placeholder="Twelve Data API key" />
-            <button onClick={saveApiKey}>Connect API</button>
-          </div>
-        </div>
-      )}
-
       {activePage === "home" ? (
         <main className="dashboard">
         <header className="topbar">
@@ -340,7 +302,7 @@ export default function App() {
               )}
             </div>
 
-            <button className="refresh-btn" title="Manual refresh: max once per minute" onClick={() => loadMarketData(true)} disabled={!apiKey || loading}>
+            <button className="refresh-btn" title="Manual refresh: max once per minute" onClick={() => loadMarketData(true)} disabled={loading}>
               <RefreshCw size={18} className={loading ? "spinning" : ""} />
             </button>
 
@@ -354,7 +316,6 @@ export default function App() {
         {error && (
           <div className="error-banner">
             <span>{error}</span>
-            <button onClick={clearApiKey}>Change key</button>
           </div>
         )}
 
@@ -465,8 +426,6 @@ export default function App() {
               market={market}
               decision={decision}
               timeframe={timeframe}
-              claudeApiKey={claudeApiKey}
-              onSaveKey={saveCludeApiKey}
             />
 
             {decision.extraInvestmentSuggestion && (

@@ -1,31 +1,26 @@
 import { useRef, useState } from "react";
 import { Sparkles, RefreshCw, AlertCircle } from "lucide-react";
-import { streamClaudeAnalysis } from "../services/claudeService";
+import { fetchClaudeAnalysis } from "../services/claudeService";
 import { buildMarketContext, parseAnalysisResponse, SYSTEM_PROMPT } from "../lib/claudePrompt";
 
-export default function ClaudePanel({ market, decision, timeframe, claudeApiKey, onSaveKey }) {
-  const [phase, setPhase] = useState("idle"); // idle | key-entry | thinking | done | error
-  const [streamText, setStreamText] = useState("");
+export default function ClaudePanel({ market, decision, timeframe }) {
+  const [phase, setPhase] = useState("idle"); // idle | thinking | done | error
   const [result, setResult] = useState(null);
   const [errorMsg, setErrorMsg] = useState("");
-  const [keyInput, setKeyInput] = useState("");
   const cooldownRef = useRef(0);
 
-  async function runAnalysis(key) {
+  async function runAnalysis() {
     const now = Date.now();
     if (now - cooldownRef.current < 30_000) return;
     cooldownRef.current = now;
 
     setPhase("thinking");
-    setStreamText("");
     setResult(null);
     setErrorMsg("");
 
-    await streamClaudeAnalysis({
-      apiKey: key,
+    await fetchClaudeAnalysis({
       systemPrompt: SYSTEM_PROMPT,
       userMessage: buildMarketContext(market, decision, timeframe),
-      onChunk: (text) => setStreamText(text),
       onDone: (text) => {
         setResult(parseAnalysisResponse(text));
         setPhase("done");
@@ -37,49 +32,13 @@ export default function ClaudePanel({ market, decision, timeframe, claudeApiKey,
     });
   }
 
-  function handleTrigger() {
-    if (!claudeApiKey) {
-      setPhase("key-entry");
-      return;
-    }
-    runAnalysis(claudeApiKey);
-  }
-
-  function handleSaveAndRun() {
-    const clean = keyInput.trim();
-    if (!clean) return;
-    onSaveKey(clean);
-    setKeyInput("");
-    runAnalysis(clean);
-  }
-
   if (phase === "idle") {
     return (
       <div className="claude-panel claude-idle">
-        <button className="claude-trigger" onClick={handleTrigger}>
+        <button className="claude-trigger" onClick={runAnalysis}>
           <Sparkles size={15} />
           Ask AI — should I add more?
         </button>
-      </div>
-    );
-  }
-
-  if (phase === "key-entry") {
-    return (
-      <div className="claude-panel claude-key-entry">
-        <p>Enter your Anthropic API key to enable AI analysis</p>
-        <div className="claude-key-row">
-          <input
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSaveAndRun()}
-            placeholder="sk-ant-..."
-            type="password"
-            autoFocus
-          />
-          <button onClick={handleSaveAndRun}>Connect</button>
-        </div>
-        <small>Get yours at <b>console.anthropic.com</b> · Stored locally only</small>
       </div>
     );
   }
@@ -90,15 +49,9 @@ export default function ClaudePanel({ market, decision, timeframe, claudeApiKey,
         <div className="claude-panel-head">
           <span><Sparkles size={12} /> AI Analysis</span>
         </div>
-        {streamText ? (
-          <div className="claude-stream">
-            {streamText}<span className="claude-cursor">▎</span>
-          </div>
-        ) : (
-          <div className="claude-dots">
-            <span /><span /><span />
-          </div>
-        )}
+        <div className="claude-dots">
+          <span /><span /><span />
+        </div>
       </div>
     );
   }
@@ -108,7 +61,7 @@ export default function ClaudePanel({ market, decision, timeframe, claudeApiKey,
       <div className="claude-panel claude-error">
         <AlertCircle size={15} />
         <span>{errorMsg}</span>
-        <button onClick={() => claudeApiKey ? runAnalysis(claudeApiKey) : setPhase("key-entry")}>
+        <button onClick={runAnalysis}>
           <RefreshCw size={12} /> Retry
         </button>
       </div>
@@ -120,7 +73,7 @@ export default function ClaudePanel({ market, decision, timeframe, claudeApiKey,
       <div className="claude-panel claude-done">
         <div className="claude-panel-head">
           <span><Sparkles size={12} /> AI Analysis</span>
-          <button onClick={() => runAnalysis(claudeApiKey)} title="Refresh analysis">
+          <button onClick={runAnalysis} title="Refresh analysis">
             <RefreshCw size={12} />
           </button>
         </div>
