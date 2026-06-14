@@ -1,5 +1,7 @@
 import { normalizeQuote, parseCandles } from "../lib/marketAnalysis";
 
+const API_BASE = import.meta.env.VITE_API_URL || "";
+
 export const QUOTE_REFRESH_MS = 15 * 60 * 1000;
 export const CHART_REFRESH_MS = 30 * 60 * 1000;
 export const MANUAL_REFRESH_COOLDOWN_MS = 60 * 1000;
@@ -34,7 +36,6 @@ export async function fetchJson(url) {
 }
 
 export async function fetchTwelveDataMarketSnapshot({
-  apiKey,
   marketConfig,
   selected,
   currentInterval,
@@ -47,14 +48,12 @@ export async function fetchTwelveDataMarketSnapshot({
     marketConfig.find((item) => item.symbol === selected) || marketConfig[0];
 
   const quotePromise = shouldFetchQuotes
-    ? fetchJson(
-        `https://api.twelvedata.com/quote?symbol=${symbols}&apikey=${apiKey}`
-      )
+    ? fetchJson(`${API_BASE}/api/market-data?endpoint=quote&symbol=${symbols}`)
     : Promise.resolve(null);
 
   const chartPromise = shouldFetchChart
     ? fetchJson(
-        `https://api.twelvedata.com/time_series?symbol=${selectedConfig.apiSymbol}&interval=${currentInterval}&outputsize=120&apikey=${apiKey}`
+        `${API_BASE}/api/market-data?endpoint=time_series&symbol=${selectedConfig.apiSymbol}&interval=${currentInterval}&outputsize=120`
       )
     : Promise.resolve({
         values: [...cachedCandles.candles]
