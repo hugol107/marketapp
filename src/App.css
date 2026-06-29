@@ -893,6 +893,17 @@ button { cursor: pointer; }
 }
 .claude-meta p { margin: 3px 0 0; color: #94a3b8; font-size: 12px; line-height: 1.35; }
 
+.claude-analysis {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(3,7,18,.38);
+  border: 1px solid rgba(255,255,255,.07);
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 /* Key entry */
 .claude-key-entry { display: grid; gap: 10px; }
 .claude-key-entry p { margin: 0; color: #94a3b8; font-size: 13px; }
