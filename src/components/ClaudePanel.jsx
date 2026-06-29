@@ -104,6 +104,12 @@ export default function ClaudePanel({ market, decision, timeframe }) {
             <p>{result.risk}</p>
           </div>
         )}
+
+        {result.analysis && (
+          <div className="claude-analysis">
+            {result.analysis}
+          </div>
+        )}
       </div>
     );
   }
